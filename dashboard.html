@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ session.name }}'s jar · Pocketjar{% endblock %}
+{% block body %}
+<header class="top"><strong>Pocketjar</strong>
+  <span>Hi, {{ session.name }} <a href="{{ url_for('export') }}">Export CSV</a><a href="{{ url_for('logout') }}">Log out</a></span></header>
+<main class="grid">
+  <section class="panel jar-panel">
+    <div class="jar-big" style="--fill: {{ pct }}%" role="img" aria-label="{{ pct }} percent of income spent">
+      <div class="level {{ 'over' if expense > income else '' }}"></div><span class="pct">{{ pct }}%</span></div>
+    <div>
+      <form method="get" class="inline"><input type="month" name="month" value="{{ ym }}" aria-label="Month"><button class="btn small">View month</button></form>
+      <h2>Balance ₹{{ '%.2f'|format(balance) }}</h2>
+      <p>Income ₹{{ '%.2f'|format(income) }} · Spent ₹{{ '%.2f'|format(expense) }}</p>
+      {% for b in budgets if b.pct >= 80 %}<p class="alert">{{ b.name }}: {{ b.pct }}% of budget used{{ ' — limit exceeded' if b.pct > 100 }}</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="panel"><h2>Add a transaction</h2>
+    <form method="post" action="{{ url_for('add') }}" class="stack">
+      <select name="category_id">{% for c in cats %}<option value="{{ c.category_id }}">{{ c.name }} ({{ c.type }})</option>{% endfor %}</select>
+      <div class="row"><input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount ₹" required>
+        <select name="payment_mode">{% for m in modes %}<option>{{ m }}</option>{% endfor %}</select></div>
+      <input name="txn_date" type="date" value="{{ today }}" required>
+      <input name="description" placeholder="Note (e.g. Filter coffee)" maxlength="150">
+      <button class="btn">Drop in jar</button>
+    </form>
+    <h2 class="gap">New category</h2>
+    <form method="post" action="{{ url_for('category') }}" class="inline">
+      <input name="name" placeholder="Name" required maxlength="40">
+      <select name="type"><option value="expense">expense</option><option value="income">income</option></select>
+      <button class="btn small">Add</button></form>
+  </section>
+
+  <section class="panel"><h2>Spending by category</h2>
+    {% if by_cat %}<canvas id="chart" height="200"></canvas>{% else %}<p class="empty">No spending in this month yet.</p>{% endif %}</section>
+
+  <section class="panel"><h2>Monthly budgets</h2>
+    {% for b in budgets %}<div class="bud"><span>{{ b.name }}</span><span>₹{{ '%.0f'|format(b.spent) }} / ₹{{ '%.0f'|format(b.limit_amount) }}</span>
+      <div class="bar"><i class="{{ 'warn' if b.pct >= 80 }}" style="width:{{ [b.pct,100]|min }}%"></i></div></div>
+    {% else %}<p class="empty">No budgets for this month. Set one below.</p>{% endfor %}
+    <form method="post" action="{{ url_for('budget') }}" class="stack gap"><input type="hidden" name="month" value="{{ ym }}">
+      <select name="category_id">{% for c in cats if c.type == 'expense' %}<option value="{{ c.category_id }}">{{ c.name }}</option>{% endfor %}</select>
+      <div class="inline"><input name="limit" type="number" min="1" step="0.01" placeholder="Limit ₹" required><button class="btn small">Set budget</button></div></form>
+  </section>
+
+  <section class="panel wide"><h2>Transactions</h2>
+    <form method="get" class="inline"><input type="hidden" name="month" value="{{ ym }}"><input name="q" value="{{ q }}" placeholder="Search note or category"><button class="btn small">Search</button></form>
+    {% if txns %}<table><thead><tr><th>Date</th><th>Category</th><th>Note</th><th>Mode</th><th class="r">Amount</th><th></th></tr></thead><tbody>
+      {% for t in txns %}<tr><td>{{ t.txn_date.strftime('%d %b') }}</td><td><span class="tag">{{ t.cat }}</span></td><td>{{ t.description }}</td><td>{{ t.payment_mode }}</td>
+        <td class="r {{ 'inc' if t.type == 'income' }}">{{ '+' if t.type == 'income' else '−' }}₹{{ '%.2f'|format(t.amount) }}</td>
+        <td class="acts"><a href="{{ url_for('edit', tid=t.txn_id) }}">Edit</a>
+          <form method="post" action="{{ url_for('delete', tid=t.txn_id) }}"><button class="x" aria-label="Delete">✕</button></form></td></tr>{% endfor %}
+    </tbody></table>{% else %}<p class="empty">No transactions found for this month.</p>{% endif %}
+  </section>
+</main>
+{% if by_cat %}<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>new Chart(document.getElementById('chart'),{type:'doughnut',data:{labels:{{ by_cat|map(attribute='name')|list|tojson }},
+datasets:[{data:{{ by_cat|map(attribute='s')|map('float')|list|tojson }},backgroundColor:['#E2A93B','#2F7F79','#E4572E','#6C4A8C','#8DBF5A','#4F7CAC','#9A9A8E'],borderWidth:3,borderColor:'#fff'}]},
+options:{cutout:'62%',plugins:{legend:{position:'bottom'}}}});</script>{% endif %}
+{% endblock %}

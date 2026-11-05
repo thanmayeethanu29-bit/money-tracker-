@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Log in · Pocketjar{% endblock %}
+{% block body %}
+<main class="auth">
+  <div class="auth-art"><div class="coin c1">₹</div><div class="coin c2">₹</div><div class="coin c3">₹</div><div class="jar"></div></div>
+  <form method="post" class="auth-card">
+    <h1>Pocketjar</h1>
+    <p>Drop your spending in the jar. See where it all went.</p>
+    <label>Email<input name="email" type="email" required autofocus autocomplete="email"></label>
+    <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+    <button class="btn">Log in</button>
+    <p class="alt">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+  </form>
+</main>
+{% endblock %}

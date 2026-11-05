@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edit transaction · Pocketjar{% endblock %}
+{% block body %}
+<main class="auth-card">
+  <h1>Edit transaction</h1>
+  <form method="post" class="stack">
+    <select name="category_id">{% for c in cats %}<option value="{{ c.category_id }}" {{ 'selected' if c.category_id == t.category_id }}>{{ c.name }} ({{ c.type }})</option>{% endfor %}</select>
+    <input name="amount" type="number" step="0.01" min="0.01" value="{{ t.amount }}" required>
+    <input name="txn_date" type="date" value="{{ t.txn_date }}" required>
+    <input name="description" value="{{ t.description or '' }}" maxlength="150">
+    <select name="payment_mode">{% for m in modes %}<option {{ 'selected' if m == t.payment_mode }}>{{ m }}</option>{% endfor %}</select>
+    <button class="btn">Save changes</button>
+  </form>
+  <p class="alt"><a href="{{ url_for('dashboard', month=t.txn_date.strftime('%Y-%m')) }}">Back to dashboard</a></p>
+</main>
+{% endblock %}
